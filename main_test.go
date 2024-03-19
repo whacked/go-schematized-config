@@ -76,3 +76,32 @@ func TestCoercePrimitiveValues(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractDeclaredItems(t *testing.T) {
+	jsonSchema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"STRING":         map[string]string{"type": "string"},
+			"SOMETHING_ELSE": map[string]interface{}{},
+			"HAS_DEFAULT":    map[string]interface{}{"type": "boolean", "default": "NO COERCION!"},
+		},
+	}
+	data := map[string]interface{}{
+		"NUMBER":         "1232529.56",
+		"INTEGER":        "98758585858232",
+		"BOOLEAN":        "TRUE",
+		"SOMETHING_ELSE": map[string]interface{}{"a": 1, "b": "C"},
+	}
+	expected := map[string]interface{}{
+		"HAS_DEFAULT":    "NO COERCION!",
+		"SOMETHING_ELSE": map[string]interface{}{"a": 1, "b": "C"},
+	}
+
+	result, err := ExtractDeclaredItems(jsonSchema, data)
+	if err != nil {
+		t.Fatalf("ExtractDeclaredItems() error: %v", err)
+	}
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("ExtractDeclaredItems() got = %v, want %v", result, expected)
+	}
+}

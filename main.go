@@ -68,6 +68,39 @@ func parseBool(value string) (bool, error) {
 	}
 }
 
+// ExtractDeclaredItems filters the input data map based on the keys declared in the JSON schema.
+// It removes keys not declared in the schema and adds keys with their default values if they are
+// declared in the schema but not present in the input data.
+func ExtractDeclaredItems(jsonSchema map[string]interface{}, data map[string]interface{}) (map[string]interface{}, error) {
+	out := make(map[string]interface{})
+	properties, ok := jsonSchema["properties"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("expected 'properties' to be a map[string]interface{}")
+	}
+
+	// Keep only the keys that are declared in the schema
+	for key, value := range data {
+		if _, exists := properties[key]; exists {
+			out[key] = value
+		}
+	}
+
+	// Add defaults for any declared keys missing from the data
+	for key, propInterface := range properties {
+		prop, ok := propInterface.(map[string]interface{})
+		if !ok {
+			continue // or return an error if strict validation is needed
+		}
+		if _, exists := out[key]; !exists {
+			if defaultValue, hasDefault := prop["default"]; hasDefault {
+				out[key] = defaultValue
+			}
+		}
+	}
+
+	return out, nil
+}
+
 func main() {
 	// Example usage
 	jsonSchema := map[string]interface{}{
