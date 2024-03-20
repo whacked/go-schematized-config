@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
+
+	"github.com/google/go-jsonnet"
 )
 
 // CoercePrimitiveValues converts string values in a map to their respective types based on a provided JSON schema.
@@ -101,27 +105,18 @@ func ExtractDeclaredItems(jsonSchema map[string]interface{}, data map[string]int
 	return out, nil
 }
 
-func main() {
-	// Example usage
-	jsonSchema := map[string]interface{}{
-		"properties": map[string]interface{}{
-			"age": map[string]interface{}{
-				"type": "integer",
-			},
-			"active": map[string]interface{}{
-				"type": "boolean",
-			},
-		},
-	}
-	data := map[string]string{
-		"age":    "30",
-		"active": "true",
+func LoadJsonnetFile(jsonOrJsonnetFilePath string) (map[string]interface{}, error) {
+
+	vm := jsonnet.MakeVM()
+	schemaJsonString, err := vm.EvaluateFile(jsonOrJsonnetFilePath)
+	if err != nil {
+		log.Fatalf("Failed to evaluate jsonnet: %v", err)
 	}
 
-	coercedData, err := CoercePrimitiveValues(jsonSchema, data)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
+	var schema map[string]interface{}
+	if err := json.Unmarshal([]byte(schemaJsonString), &schema); err != nil {
+		log.Fatalf("Failed to load schema: %v", err)
 	}
-	fmt.Println(coercedData)
+
+	return schema, nil
 }
